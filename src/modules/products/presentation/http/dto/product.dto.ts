@@ -92,17 +92,17 @@ export class CreateProductDto {
   @MaxLength(40)
   badge?: string | null
 
-  @IsUrl(URL_OPTS)
+  @IsUrl(URL_OPTS, { message: 'Envie a foto principal' })
   imageUrl: string
 
   @IsOptional()
-  @IsUrl(URL_OPTS)
+  @IsUrl(URL_OPTS, { message: 'Link da foto inválido' })
   hoverImageUrl?: string | null
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(12)
-  @IsUrl(URL_OPTS, { each: true })
+  @ArrayMaxSize(12, { message: 'A galeria aceita até 12 fotos' })
+  @IsUrl(URL_OPTS, { each: true, message: 'Há um link inválido na galeria' })
   gallery?: string[]
 
   /** Só para a categoria "kit" */
