@@ -12,7 +12,8 @@ async function bootstrap() {
   const config = app.get<ConfigService<Env, true>>(ConfigService)
 
   app.setGlobalPrefix('api/v1')
-  app.use(helmet())
+  // A API é consumida de outro domínio (loja na Vercel): fotos e respostas não podem ficar presas à mesma origem
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
   // Atrás de proxy/load balancer (Render, Railway, Vercel...), para o rate limit ver o IP real
   if (config.get('TRUST_PROXY') > 0) app.set('trust proxy', config.get('TRUST_PROXY'))
   app.enableCors({
