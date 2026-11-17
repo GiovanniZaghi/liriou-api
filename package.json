@@ -16,7 +16,8 @@
     "migration:show": "npm run typeorm -- migration:show",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:create": "typeorm-ts-node-commonjs migration:create",
-    "seed": "ts-node src/infra/database/seeds/run-seeds.ts"
+    "seed": "ts-node src/infra/database/seeds/run-seeds.ts",
+    "db:reset-loja": "ts-node src/infra/database/scripts/reset-store-data.ts"
   },
   "jest": {
     "moduleFileExtensions": [
