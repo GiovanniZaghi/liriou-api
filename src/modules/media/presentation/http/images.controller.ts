@@ -19,6 +19,7 @@ import { SkipThrottle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
 import type { Env } from '../../../../config/env'
 import { ValidationError } from '../../../../shared/domain/domain-error'
+import { API_PREFIX, normalizePublicApiUrl } from '../../../../shared/infra/public-api-url'
 import { JwtAuthGuard } from '../../../auth/presentation/http/jwt-auth.guard'
 import { GetImageUseCase, UploadImageUseCase } from '../../application/images.use-cases'
 import { MAX_IMAGE_BYTES } from '../../domain/image'
@@ -57,9 +58,10 @@ export class AdminImagesController {
 
   /** URL absoluta: o produto guarda o link pronto e a vitrine usa direto no <img>. */
   private publicBase(req: Request) {
-    const configured = this.config.get('PUBLIC_API_URL', { infer: true })?.trim().replace(/\/+$/, '')
-    if (configured) return /^https?:\/\//.test(configured) ? configured : `https://${configured}`
-    return `${req.protocol}://${req.get('host')}/api/v1`
+    return (
+      normalizePublicApiUrl(this.config.get('PUBLIC_API_URL', { infer: true })) ??
+      `${req.protocol}://${req.get('host')}${API_PREFIX}`
+    )
   }
 }
 

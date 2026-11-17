@@ -1,3 +1,4 @@
+import { normalizePublicApiUrl } from '../../../shared/infra/public-api-url'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { Env } from '../../../config/env'
@@ -29,7 +30,7 @@ export class ShipmentsConfig {
 
   constructor(config: ConfigService<Env, true>) {
     this.labelsEnabled = Boolean(config.get('FRENET_TOKEN', { infer: true }) && config.get('FRENET_PARTNER_TOKEN', { infer: true }))
-    const base = config.get('PUBLIC_API_URL', { infer: true })?.replace(/\/$/, '')
+    const base = normalizePublicApiUrl(config.get('PUBLIC_API_URL', { infer: true }))
     const key = config.get('FRENET_WEBHOOK_KEY', { infer: true })
     this.trackingNotificationUrl = base && key ? `${base}/webhooks/frenet/tracking?key=${encodeURIComponent(key)}` : null
   }
