@@ -1,20 +1,17 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Query, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator'
+import { IsEmail, IsIn, IsOptional, IsString, MaxLength } from 'class-validator'
 import { toReais } from '../../../../shared/domain/money'
 import { isoDate } from '../../../../shared/presentation/http/format'
 import { presentPaginated } from '../../../../shared/presentation/http/paginated.presenter'
 import { PaginationQueryDto } from '../../../../shared/presentation/http/pagination-query.dto'
 import { JwtAuthGuard } from '../../../auth/presentation/http/jwt-auth.guard'
-import { CheckoutStage } from '../../../cart/domain/cart'
-import type { JourneyDetail, JourneyRow } from '../../application/customer-journey.query'
-import {
-  GetCustomerJourneyUseCase,
-  GetJourneyFunnelUseCase,
-  ListCustomerJourneysUseCase,
-} from '../../application/customers.use-cases'
+import type { CustomerDetail, CustomerRow, CustomerSegment } from '../../application/customers.query'
+import { GetCustomerUseCase, GetJourneyFunnelUseCase, ListCustomersUseCase } from '../../application/customers.use-cases'
 
-export class ListJourneysQueryDto extends PaginationQueryDto {
+const SEGMENTS: CustomerSegment[] = ['buyers', 'not_bought']
+
+export class ListCustomersQueryDto extends PaginationQueryDto {
   /** Nome, e-mail, telefone ou CPF */
   @IsOptional()
   @IsString()
@@ -22,28 +19,61 @@ export class ListJourneysQueryDto extends PaginationQueryDto {
   q?: string
 
   @IsOptional()
-  @IsEnum(CheckoutStage)
-  stage?: CheckoutStage
+  @IsIn(SEGMENTS)
+  segment?: CustomerSegment
+}
+
+export class CustomerDetailQueryDto {
+  @IsEmail()
+  email: string
 }
 
 const isoOrNull = (d: Date | null) => (d ? isoDate(new Date(d)) : null)
 
-function presentRow(r: JourneyRow) {
+function presentRow(r: CustomerRow) {
   return {
-    cartId: r.cartId,
-    stage: r.stage,
-    customer: r.customer,
+    email: r.email,
+    name: r.name,
+    phone: r.phone,
     city: r.city,
     state: r.state,
-    itemCount: r.itemCount,
-    value: toReais(r.valueCents),
-    order: r.order ? { id: r.order.id, number: r.order.number, status: r.order.status, total: toReais(r.order.totalCents) } : null,
-    createdAt: isoDate(new Date(r.createdAt)),
+    ordersCount: r.ordersCount,
+    paidOrdersCount: r.paidOrdersCount,
+    totalSpent: toReais(r.totalSpentCents),
+    lastOrderAt: isoOrNull(r.lastOrderAt),
+    openCartsCount: r.openCartsCount,
+    openCartsValue: toReais(r.openCartsValueCents),
+    firstSeenAt: isoDate(new Date(r.firstSeenAt)),
     lastActivityAt: isoDate(new Date(r.lastActivityAt)),
   }
 }
 
-/** Acompanhamento das clientes: funil do checkout, onde cada uma parou e o que tinha na sacola. */
+function presentDetail(d: CustomerDetail) {
+  return {
+    ...presentRow(d),
+    cpf: d.cpf,
+    address: d.address,
+    orders: d.orders.map((o) => ({
+      id: o.id,
+      number: o.number,
+      status: o.status,
+      itemCount: o.itemCount,
+      total: toReais(o.totalCents),
+      shipmentStatus: o.shipmentStatus,
+      createdAt: isoDate(new Date(o.createdAt)),
+    })),
+    openCarts: d.openCarts.map((c) => ({
+      cartId: c.cartId,
+      stage: c.stage,
+      itemCount: c.itemCount,
+      value: toReais(c.valueCents),
+      items: c.items,
+      lastActivityAt: isoDate(new Date(c.lastActivityAt)),
+    })),
+  }
+}
+
+/** Clientes: uma por e-mail, com todos os pedidos e sacolas que não viraram pedido. */
 @ApiTags('Admin · Clientes')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -51,8 +81,8 @@ function presentRow(r: JourneyRow) {
 export class AdminCustomersController {
   constructor(
     private readonly funnel: GetJourneyFunnelUseCase,
-    private readonly listJourneys: ListCustomerJourneysUseCase,
-    private readonly getJourney: GetCustomerJourneyUseCase,
+    private readonly listCustomers: ListCustomersUseCase,
+    private readonly getCustomer: GetCustomerUseCase,
   ) {}
 
   @Get('funnel')
@@ -61,50 +91,14 @@ export class AdminCustomersController {
     return { ...counts, orderedValue: toReais(orderedValueCents), openValue: toReais(openValueCents) }
   }
 
-  @Get()
-  async list(@Query() { page, pageSize, ...filters }: ListJourneysQueryDto) {
-    return presentPaginated(await this.listJourneys.execute({ filters, page: { page, pageSize } }), presentRow)
+  /** E-mail na query (e não no caminho) para não brigar com @, + e pontos na URL */
+  @Get('detail')
+  async detail(@Query() { email }: CustomerDetailQueryDto) {
+    return presentDetail(await this.getCustomer.execute(email))
   }
 
-  @Get(':cartId')
-  async get(@Param('cartId', ParseUUIDPipe) cartId: string) {
-    const d: JourneyDetail = await this.getJourney.execute(cartId)
-    const subtotalCents = d.items.reduce((s, i) => s + i.unitPriceCents * i.quantity, 0)
-    return {
-      ...presentRow(d),
-      shippingAddress: d.shippingAddress,
-      shippingOption: d.orderShippingLabel ?? d.cartShippingLabel,
-      couponCode: d.couponCode,
-      items: d.items.map((i) => ({
-        productId: i.productId,
-        name: i.name,
-        sku: i.sku,
-        image: i.image,
-        unitPrice: toReais(i.unitPriceCents),
-        quantity: i.quantity,
-        lineTotal: toReais(i.unitPriceCents * i.quantity),
-      })),
-      totals: d.orderTotals
-        ? {
-            subtotal: toReais(d.orderTotals.subtotalCents),
-            discount: toReais(d.orderTotals.discountCents),
-            shipping: toReais(d.orderTotals.shippingCents),
-            total: toReais(d.orderTotals.totalCents),
-          }
-        : { subtotal: toReais(subtotalCents), discount: 0, shipping: null, total: toReais(subtotalCents) },
-      timeline: {
-        createdAt: isoDate(new Date(d.timeline.createdAt)),
-        identifiedAt: isoOrNull(d.timeline.identifiedAt),
-        deliveryAt: isoOrNull(d.timeline.deliveryAt),
-        orderedAt: isoOrNull(d.timeline.orderedAt),
-      },
-      otherSessions: d.otherSessions.map((s) => ({
-        cartId: s.cartId,
-        stage: s.stage,
-        value: toReais(s.valueCents),
-        order: s.order ? { id: s.order.id, number: s.order.number, status: s.order.status } : null,
-        lastActivityAt: isoDate(new Date(s.lastActivityAt)),
-      })),
-    }
+  @Get()
+  async list(@Query() { page, pageSize, ...filters }: ListCustomersQueryDto) {
+    return presentPaginated(await this.listCustomers.execute({ filters, page: { page, pageSize } }), presentRow)
   }
 }
