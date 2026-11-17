@@ -10,6 +10,7 @@ import { DatabaseModule } from './infra/database/database.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { CartModule } from './modules/cart/cart.module'
 import { LeadsModule } from './modules/leads/leads.module'
+import { MediaModule } from './modules/media/media.module'
 import { CouponsModule } from './modules/coupons/coupons.module'
 import { OrdersModule } from './modules/orders/orders.module'
 import { CustomersModule } from './modules/customers/customers.module'
@@ -45,6 +46,7 @@ class HealthController {
     CouponsModule,
     PaymentsModule,
     ShipmentsModule,
+    MediaModule,
   ],
   controllers: [HealthController],
   providers: [

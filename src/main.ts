@@ -19,7 +19,9 @@ async function bootstrap() {
     origin: config
       .get<string>('CORS_ORIGIN')
       .split(',')
-      .map((o) => o.trim()),
+      // O navegador manda o Origin sem barra final; normaliza para "https://site.com/" também casar
+      .map((o) => o.trim().replace(/\/+$/, ''))
+      .filter(Boolean),
     credentials: true,
   })
   app.useGlobalPipes(
