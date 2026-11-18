@@ -21,6 +21,8 @@ export function presentCatalogProduct(p: Product) {
     gallery: p.gallery,
     kit: p.kit,
     inStock: p.inStock,
+    /** Para ordenar por "Novidades" na vitrine */
+    createdAt: isoDate(p.createdAt),
   }
 }
 
