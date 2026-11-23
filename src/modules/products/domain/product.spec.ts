@@ -11,6 +11,7 @@ const details = (over: Partial<ProductDetails> = {}): ProductDetails => ({
   description: '',
   category: ProductCategory.SCRUNCHIE,
   priceCents: 4990,
+  compareAtPriceCents: null,
   colorName: null,
   colorHex: '#6a7b6c',
   badge: null,
@@ -75,5 +76,30 @@ describe('Product', () => {
     expect(p.canFulfill(3)).toBe(false)
     p.update({ isActive: false })
     expect(p.canFulfill(1)).toBe(false)
+  })
+
+  describe('preço De/Por', () => {
+    it('aceita preço "De" maior que o atual e marca como promoção', () => {
+      const p = Product.create(details({ compareAtPriceCents: 6990 }))
+      expect(p.compareAtPriceCents).toBe(6990)
+      expect(p.isOnSale).toBe(true)
+    })
+
+    it('recusa preço "De" menor ou igual ao atual', () => {
+      expect(() => Product.create(details({ compareAtPriceCents: 4990 }))).toThrow(ValidationError)
+      expect(() => Product.create(details({ compareAtPriceCents: 3000 }))).toThrow(ValidationError)
+    })
+
+    it('zero ou vazio remove a promoção', () => {
+      const p = Product.create(details({ compareAtPriceCents: 6990 }))
+      p.update({ compareAtPriceCents: null })
+      expect(p.isOnSale).toBe(false)
+      expect(Product.create(details({ compareAtPriceCents: 0 })).compareAtPriceCents).toBeNull()
+    })
+
+    it('baixar o "De" abaixo do novo preço é bloqueado', () => {
+      const p = Product.create(details({ compareAtPriceCents: 6990 }))
+      expect(() => p.update({ priceCents: 7990 })).toThrow(ValidationError)
+    })
   })
 })

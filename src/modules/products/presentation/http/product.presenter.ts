@@ -13,6 +13,7 @@ export function presentCatalogProduct(p: Product) {
     description: p.description,
     category: p.category,
     price: toReais(p.priceCents),
+    compareAtPrice: p.isOnSale ? toReais(p.compareAtPriceCents!) : null,
     colorName: p.colorName,
     colorHex: p.colorHex,
     badge: p.badge,
@@ -36,6 +37,7 @@ export function presentAdminProduct(p: Product) {
     description: p.description,
     category: p.category,
     price: toReais(p.priceCents),
+    compareAtPrice: p.compareAtPriceCents === null ? null : toReais(p.compareAtPriceCents),
     colorName: p.colorName,
     colorHex: p.colorHex,
     badge: p.badge,
@@ -76,6 +78,7 @@ export function toProductDetails(dto: CreateProductDto): ProductDetails {
     description: dto.description ?? '',
     category: dto.category,
     priceCents: toCents(dto.price),
+    compareAtPriceCents: dto.compareAtPrice ? toCents(dto.compareAtPrice) : null,
     colorName: dto.colorName ?? null,
     colorHex: dto.colorHex ?? null,
     badge: dto.badge ?? null,
@@ -95,11 +98,12 @@ export function toProductDetails(dto: CreateProductDto): ProductDetails {
 
 /** PATCH: só os campos enviados; `null` limpa campos opcionais. */
 export function toProductChanges(dto: UpdateProductDto): Partial<ProductDetails> {
-  const { price, description, gallery, ...rest } = dto
+  const { price, compareAtPrice, description, gallery, ...rest } = dto
   const changes: Partial<ProductDetails> = Object.fromEntries(
     Object.entries(rest).filter(([, v]) => v !== undefined),
   ) as Partial<ProductDetails>
   if (price !== undefined) changes.priceCents = toCents(price)
+  if (compareAtPrice !== undefined) changes.compareAtPriceCents = compareAtPrice ? toCents(compareAtPrice) : null
   if (description !== undefined) changes.description = description ?? ''
   if (gallery !== undefined) changes.gallery = gallery ?? []
   return changes

@@ -33,6 +33,9 @@ export class ProductOrmEntity {
   @Column({ type: 'integer', name: 'price_cents' })
   priceCents: number
 
+  @Column({ type: 'integer', name: 'compare_at_price_cents', nullable: true })
+  compareAtPriceCents: number | null
+
   @Column({ type: 'varchar', length: 80, name: 'color_name', nullable: true })
   colorName: string | null
 

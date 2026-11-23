@@ -21,6 +21,8 @@ export interface ProductProps {
   description: string
   category: ProductCategory
   priceCents: Cents
+  /** Preço "De" (riscado na vitrine). Só vale se for maior que o preço atual. */
+  compareAtPriceCents: Cents | null
   colorName: string | null
   colorHex: string | null
   badge: string | null
@@ -104,6 +106,9 @@ export class Product {
   get description() { return this.props.description }
   get category() { return this.props.category }
   get priceCents() { return this.props.priceCents }
+  get compareAtPriceCents() { return this.props.compareAtPriceCents }
+  /** Está em promoção (tem preço "De" acima do atual)? */
+  get isOnSale() { return this.props.compareAtPriceCents !== null && this.props.compareAtPriceCents > this.props.priceCents }
   get colorName() { return this.props.colorName }
   get colorHex() { return this.props.colorHex }
   get badge() { return this.props.badge }
@@ -144,6 +149,7 @@ export class Product {
       colorHex: d.colorHex?.toUpperCase() || null,
       badge: d.badge?.trim() || null,
       hoverImageUrl: d.hoverImageUrl || null,
+      compareAtPriceCents: d.compareAtPriceCents || null,
     }
   }
 
@@ -153,6 +159,11 @@ export class Product {
     if (!d.sku.trim()) errors.sku = 'Informe o SKU'
     if (d.name.trim().length < 3) errors.name = 'Informe o nome do produto'
     if (!Number.isInteger(d.priceCents) || d.priceCents < 0) errors.price = 'Preço inválido'
+    if (d.compareAtPriceCents != null && d.compareAtPriceCents !== 0) {
+      if (!Number.isInteger(d.compareAtPriceCents) || d.compareAtPriceCents <= d.priceCents) {
+        errors.compareAtPrice = 'O preço "De" precisa ser maior que o preço "Por"'
+      }
+    }
     if (d.colorHex && !HEX_RE.test(d.colorHex)) errors.colorHex = 'Use o formato #RRGGBB'
     if (!Number.isInteger(d.minStock) || d.minStock < 0) errors.minStock = 'Estoque mínimo inválido'
     if (!d.imageUrl.trim()) errors.imageUrl = 'Informe a imagem principal'

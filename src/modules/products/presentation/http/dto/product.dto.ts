@@ -78,6 +78,12 @@ export class CreateProductDto {
   @Min(0)
   price: number
 
+  /** Preço "De" em reais, riscado na vitrine (ex.: 69.9). `null` remove a promoção. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Preço "De" inválido' })
+  @Min(0)
+  compareAtPrice?: number | null
+
   @IsOptional()
   @IsString()
   @MaxLength(80)
