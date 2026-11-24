@@ -35,6 +35,7 @@ export class TypeOrmOrderRepository extends OrderRepository {
         shippingOptionLabel: order.shippingOption.label,
         shippingDetails: (({ id: _id, label: _label, ...details }) => details)(order.shippingOption),
         couponCode: order.couponCode,
+        giftWrap: order.giftWrap,
         ...order.totals,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
@@ -67,6 +68,7 @@ export class TypeOrmOrderRepository extends OrderRepository {
         quotedPriceCents: row.shippingDetails?.quotedPriceCents ?? null,
       },
       couponCode: row.couponCode,
+      giftWrap: row.giftWrap,
       items: lines.map(({ orderId: _o, ...item }) => item),
       totals: {
         subtotalCents: row.subtotalCents,

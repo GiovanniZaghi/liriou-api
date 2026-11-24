@@ -13,11 +13,12 @@ import {
   SaveCheckoutDeliveryUseCase,
   SelectShippingUseCase,
   SetCartItemQuantityUseCase,
+  SetGiftWrapUseCase,
 } from '../../application/cart.use-cases'
 import { SaveCheckoutCustomerDto, SaveCheckoutDeliveryDto } from './dto/checkout.dto'
 import { StoreSettings } from '../../domain/store-settings'
 import { presentCart, presentShippingQuote, presentStoreSettings } from './cart.presenter'
-import { ApplyCouponDto, CartItemDto, CreateCartDto, QuoteShippingDto, SelectShippingDto, SetQuantityDto } from './dto/cart.dto'
+import { ApplyCouponDto, CartItemDto, CreateCartDto, QuoteShippingDto, SelectShippingDto, SetGiftWrapDto, SetQuantityDto } from './dto/cart.dto'
 
 /**
  * Sacola anônima. O id (UUID v4, impossível de adivinhar) funciona como credencial:
@@ -38,6 +39,7 @@ export class CartsController {
     private readonly quoteShippingUseCase: QuoteShippingUseCase,
     private readonly saveCustomer: SaveCheckoutCustomerUseCase,
     private readonly saveDelivery: SaveCheckoutDeliveryUseCase,
+    private readonly setGiftWrap: SetGiftWrapUseCase,
   ) {}
 
   @Post()
@@ -82,6 +84,12 @@ export class CartsController {
   @Delete(':id/coupon')
   async dropCoupon(@Param('id', ParseUUIDPipe) cartId: string) {
     return presentCart(await this.removeCoupon.execute(cartId))
+  }
+
+  /** Embalagem de Natal (sim/não) */
+  @Put(':id/gift-wrap')
+  async giftWrap(@Param('id', ParseUUIDPipe) cartId: string, @Body() { giftWrap }: SetGiftWrapDto) {
+    return presentCart(await this.setGiftWrap.execute({ cartId, giftWrap }))
   }
 
   /** Opções de frete (transportadora, preço e prazo) para o CEP, com o peso real da sacola */

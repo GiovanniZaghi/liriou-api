@@ -38,6 +38,8 @@ export interface AdminOrderRow {
   state: string
   itemCount: number
   totalCents: Cents
+  /** Embalagem de Natal */
+  giftWrap: boolean
   /** Tentativa de pagamento mais recente */
   payment: AdminOrderPaymentRef | null
   shipment: AdminOrderShipmentRef | null

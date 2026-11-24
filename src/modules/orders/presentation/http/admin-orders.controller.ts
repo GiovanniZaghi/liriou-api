@@ -47,6 +47,7 @@ export function presentAdminOrderRow(o: AdminOrderRow) {
     state: o.state,
     itemCount: o.itemCount,
     total: toReais(o.totalCents),
+    giftWrap: o.giftWrap,
     payment: o.payment,
     shipment: o.shipment,
     createdAt: isoDate(new Date(o.createdAt)),

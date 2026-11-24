@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer'
-import { ArrayMaxSize, IsArray, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateNested } from 'class-validator'
+import { ArrayMaxSize, IsArray, IsBoolean, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateNested } from 'class-validator'
 import { MAX_DISTINCT_ITEMS, MAX_QUANTITY_PER_ITEM } from '../../../domain/cart'
 
 export class CartItemDto {
@@ -20,6 +20,12 @@ export class CreateCartDto {
   @ValidateNested({ each: true })
   @Type(() => CartItemDto)
   items?: CartItemDto[]
+}
+
+export class SetGiftWrapDto {
+  /** true = quer embalagem de Natal */
+  @IsBoolean()
+  giftWrap: boolean
 }
 
 export class SetQuantityDto {

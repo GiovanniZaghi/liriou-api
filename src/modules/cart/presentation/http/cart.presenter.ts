@@ -20,6 +20,7 @@ export function presentCart({ cart, items, coupon, pricing }: CartView) {
       available,
     })),
     itemCount: cart.itemCount,
+    giftWrap: cart.giftWrap,
     coupon: coupon
       ? {
           code: coupon.coupon.code,

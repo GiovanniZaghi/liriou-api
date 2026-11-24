@@ -18,6 +18,9 @@ export class CartOrmEntity {
   @Column({ type: 'jsonb', name: 'shipping_quote', nullable: true })
   shipping: SelectedShipping | null
 
+  @Column({ type: 'boolean', name: 'gift_wrap', default: false })
+  giftWrap: boolean
+
   @Column({ type: 'varchar', length: 20, name: 'checkout_stage', default: CheckoutStage.CART })
   stage: CheckoutStage
 

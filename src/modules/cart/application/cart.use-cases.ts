@@ -151,6 +151,15 @@ export class ApplyCouponUseCase implements UseCase<{ cartId: string; code: strin
 }
 
 @Injectable()
+export class SetGiftWrapUseCase implements UseCase<{ cartId: string; giftWrap: boolean }, CartView> {
+  constructor(private readonly mutator: CartMutator) {}
+
+  execute({ cartId, giftWrap }: { cartId: string; giftWrap: boolean }) {
+    return this.mutator.mutate(cartId, (cart) => cart.setGiftWrap(giftWrap))
+  }
+}
+
+@Injectable()
 export class RemoveCouponUseCase implements UseCase<string, CartView> {
   constructor(private readonly mutator: CartMutator) {}
 

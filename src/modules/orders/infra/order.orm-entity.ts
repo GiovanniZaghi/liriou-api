@@ -41,6 +41,9 @@ export class OrderOrmEntity {
   @Column({ type: 'varchar', length: 40, name: 'coupon_code', nullable: true })
   couponCode: string | null
 
+  @Column({ type: 'boolean', name: 'gift_wrap', default: false })
+  giftWrap: boolean
+
   @Column({ type: 'integer', name: 'subtotal_cents' })
   subtotalCents: number
 

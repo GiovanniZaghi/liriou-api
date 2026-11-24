@@ -77,6 +77,7 @@ export class PlaceOrderUseCase implements UseCase<PlaceOrderInput, Order> {
         quotedPriceCents: shipping.priceCents,
       },
       couponCode: coupon?.code ?? null,
+      giftWrap: cart.giftWrap,
       items: view.items.map(({ product, quantity }) => ({
         productId: product.id,
         productName: product.name,

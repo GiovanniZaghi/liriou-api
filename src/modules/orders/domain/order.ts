@@ -46,6 +46,8 @@ export interface OrderProps {
   shippingAddress: ShippingAddress
   shippingOption: OrderShipping
   couponCode: string | null
+  /** Cliente pediu embalagem de Natal */
+  giftWrap: boolean
   items: OrderItem[]
   totals: OrderTotals
   createdAt: Date
@@ -72,6 +74,7 @@ export class Order {
   get shippingAddress() { return this.props.shippingAddress }
   get shippingOption() { return this.props.shippingOption }
   get couponCode() { return this.props.couponCode }
+  get giftWrap() { return this.props.giftWrap }
   get items(): readonly OrderItem[] { return this.props.items }
   get totals() { return this.props.totals }
   get itemCount() { return this.props.items.reduce((s, i) => s + i.quantity, 0) }

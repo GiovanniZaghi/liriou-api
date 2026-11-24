@@ -14,6 +14,24 @@ const SEDEX: SelectedShipping = {
 }
 
 describe('Cart', () => {
+  it('embalagem de Natal: começa desmarcada, liga/desliga e mantém o frete', () => {
+    const cart = Cart.create()
+    cart.setQuantity('a', 1)
+    cart.selectShipping(SEDEX)
+    expect(cart.giftWrap).toBe(false)
+    cart.setGiftWrap(true)
+    expect(cart.giftWrap).toBe(true)
+    expect(cart.shipping).toEqual(SEDEX)
+    cart.setGiftWrap(false)
+    expect(cart.giftWrap).toBe(false)
+  })
+
+  it('embalagem de Natal não muda depois que a sacola virou pedido', () => {
+    const cart = Cart.create()
+    cart.markOrdered('pedido-1')
+    expect(() => cart.setGiftWrap(true)).toThrow(CartAlreadyOrderedError)
+  })
+
   it('define, atualiza e remove (quantidade 0) itens', () => {
     const cart = Cart.create()
     cart.setQuantity('a', 2)

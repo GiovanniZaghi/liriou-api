@@ -20,6 +20,7 @@ export function presentOrder(o: Order) {
     // Preço cotado na transportadora é dado interno: a cliente vê só rótulo e prazo
     shippingOption: { id: o.shippingOption.id, label: o.shippingOption.label, deliveryDays: o.shippingOption.deliveryDays },
     couponCode: o.couponCode,
+    giftWrap: o.giftWrap,
     items: o.items.map((i) => ({
       productId: i.productId,
       name: i.productName,

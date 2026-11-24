@@ -17,7 +17,7 @@ const TIME_ZONE = 'America/Sao_Paulo'
 /** Pedido + itens + último pagamento + envio, numa linha por pedido. */
 const ROW_SELECT = `
   o.id, o.number, o.status, o.customer_name, o.customer_email, o.customer_phone, o.customer_cpf,
-  o.shipping_address, o.total_cents, o.created_at,
+  o.shipping_address, o.total_cents, o.gift_wrap, o.created_at,
   (SELECT COALESCE(SUM(i.quantity), 0)::int FROM order_items i WHERE i.order_id = o.id) AS item_count,
   pay.method AS payment_method, pay.status AS payment_status, pay.installments AS payment_installments,
   s.status AS shipment_status, s.tracking_number`
@@ -39,6 +39,7 @@ interface RawRow {
   customer_cpf: string
   shipping_address: AdminOrderDetail['shippingAddress']
   total_cents: number
+  gift_wrap: boolean
   created_at: Date
   item_count: number
   payment_method: string | null
@@ -195,6 +196,7 @@ function toRow(r: RawRow): AdminOrderRow {
     state: r.shipping_address?.state ?? '',
     itemCount: Number(r.item_count),
     totalCents: r.total_cents,
+    giftWrap: Boolean(r.gift_wrap),
     payment: r.payment_method
       ? { method: r.payment_method, status: r.payment_status ?? '', installments: Number(r.payment_installments ?? 1) }
       : null,

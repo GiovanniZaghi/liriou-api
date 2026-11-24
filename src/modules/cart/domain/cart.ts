@@ -40,6 +40,8 @@ export interface CartProps {
   lines: CartLine[]
   couponCode: string | null
   shipping: SelectedShipping | null
+  /** Cliente pediu embalagem de Natal */
+  giftWrap: boolean
   stage: CheckoutStage
   customer: Customer | null
   shippingAddress: ShippingAddress | null
@@ -71,6 +73,7 @@ export class Cart {
       lines: [],
       couponCode: null,
       shipping: null,
+      giftWrap: false,
       stage: CheckoutStage.CART,
       customer: null,
       shippingAddress: null,
@@ -138,6 +141,12 @@ export class Cart {
     this.touch({ shipping })
   }
 
+  /** Marca/desmarca a embalagem de Natal (não mexe no frete nem nos itens). */
+  setGiftWrap(wanted: boolean): void {
+    this.assertOpen()
+    this.touch({ giftWrap: wanted })
+  }
+
   // ─── Checkout ───────────────────────────────────────────────────────────────
 
   /** Etapa 1 concluída. Reenviar a identificação não faz a etapa regredir. */
@@ -172,6 +181,7 @@ export class Cart {
   get lines(): readonly CartLine[] { return this.props.lines }
   get couponCode() { return this.props.couponCode }
   get shipping() { return this.props.shipping }
+  get giftWrap() { return this.props.giftWrap }
   get shippingOptionId() { return this.props.shipping?.serviceCode ?? null }
   get itemCount() { return this.props.lines.reduce((sum, l) => sum + l.quantity, 0) }
   get stage() { return this.props.stage }
