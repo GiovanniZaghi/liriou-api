@@ -9,12 +9,12 @@ import type { OrderStatus } from '../../orders/domain/order'
  * Uma cliente = um e-mail: junta todos os pedidos e sacolas dela, sem regras de escrita.
  */
 
-export type CustomerSegment = 'buyers' | 'not_bought'
+export type CustomerSegment = 'buyers' | 'not_bought' | 'birthday_month'
 
 export interface CustomerFilters {
   /** Nome, e-mail, telefone ou CPF */
   q?: string
-  /** buyers = já fez pedido · not_bought = só sacolas, sem pedido */
+  /** buyers = já fez pedido · not_bought = só sacolas, sem pedido · birthday_month = faz aniversário este mês */
   segment?: CustomerSegment
 }
 
@@ -23,6 +23,8 @@ export interface CustomerRow {
   email: string
   name: string
   phone: string
+  /** AAAA-MM-DD, quando a cliente informou */
+  birthDate: string | null
   city: string | null
   state: string | null
   /** Pedidos não cancelados */

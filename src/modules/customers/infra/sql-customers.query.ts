@@ -24,16 +24,19 @@ const CART_VALUE = `(SELECT COALESCE(SUM(i.quantity * p.price_cents), 0) FROM ca
 const CUSTOMERS_CTE = `
   WITH people AS (
     SELECT lower(o.customer_email) AS email, o.customer_name AS name, o.customer_phone AS phone, o.customer_cpf AS cpf,
-           o.shipping_address AS address, o.created_at AS at
+           o.customer_birth_date::text AS birth_date, o.shipping_address AS address, o.created_at AS at
       FROM orders o
     UNION ALL
     SELECT lower(c.customer->>'email'), c.customer->>'name', c.customer->>'phone', c.customer->>'cpf',
-           c.shipping_address, c.updated_at
+           NULLIF(c.customer->>'birthDate', ''), c.shipping_address, c.updated_at
       FROM carts c
      WHERE c.customer IS NOT NULL AND c.customer->>'email' IS NOT NULL
   ),
   latest AS (
     SELECT DISTINCT ON (email) email, name, phone, cpf FROM people ORDER BY email, at DESC
+  ),
+  birthday AS (
+    SELECT DISTINCT ON (email) email, birth_date FROM people WHERE birth_date IS NOT NULL ORDER BY email, at DESC
   ),
   last_address AS (
     SELECT DISTINCT ON (email) email, address FROM people WHERE address IS NOT NULL ORDER BY email, at DESC
@@ -57,7 +60,7 @@ const CUSTOMERS_CTE = `
      GROUP BY 1
   ),
   customers AS (
-    SELECT l.email, l.name, l.phone, l.cpf,
+    SELECT l.email, l.name, l.phone, l.cpf, b.birth_date,
            la.address, la.address->>'city' AS city, la.address->>'state' AS state,
            COALESCE(o.orders_count, 0) AS orders_count, COALESCE(o.paid_count, 0) AS paid_count,
            COALESCE(o.spent, 0) AS spent, o.last_order_at,
@@ -66,6 +69,7 @@ const CUSTOMERS_CTE = `
       FROM latest l
       JOIN activity a USING (email)
       LEFT JOIN last_address la USING (email)
+      LEFT JOIN birthday b USING (email)
       LEFT JOIN ord o USING (email)
       LEFT JOIN open_carts oc USING (email)
   )`
@@ -75,6 +79,7 @@ interface RawCustomer {
   name: string
   phone: string
   cpf: string | null
+  birth_date: string | null
   address: CustomerDetail['address']
   city: string | null
   state: string | null
@@ -125,6 +130,10 @@ export class SqlCustomersQuery extends CustomersQuery {
 
     if (segment === 'buyers') where.push('orders_count > 0')
     if (segment === 'not_bought') where.push('orders_count = 0')
+    // Aniversariantes do mês (fuso de São Paulo)
+    if (segment === 'birthday_month') {
+      where.push(`birth_date IS NOT NULL AND extract(month FROM birth_date::date) = extract(month FROM now() AT TIME ZONE 'America/Sao_Paulo')`)
+    }
     const term = q?.trim()
     if (term) {
       const like = param(`%${escapeLike(term)}%`)
@@ -142,7 +151,7 @@ export class SqlCustomersQuery extends CustomersQuery {
       this.db.query(
         `${CUSTOMERS_CTE}
          SELECT * FROM customers ${whereSql}
-          ORDER BY last_activity_at DESC
+          ORDER BY ${segment === 'birthday_month' ? `extract(day FROM birth_date::date), ` : ''}last_activity_at DESC
           LIMIT ${param(page.pageSize)} OFFSET ${param(pageOffset(page))}`,
         params,
       ) as Promise<RawCustomer[]>,
@@ -210,6 +219,7 @@ function toRow(r: RawCustomer): CustomerRow {
     email: r.email,
     name: r.name,
     phone: r.phone,
+    birthDate: r.birth_date,
     city: r.city,
     state: r.state,
     ordersCount: Number(r.orders_count),

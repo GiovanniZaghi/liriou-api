@@ -9,7 +9,7 @@ import { JwtAuthGuard } from '../../../auth/presentation/http/jwt-auth.guard'
 import type { CustomerDetail, CustomerRow, CustomerSegment } from '../../application/customers.query'
 import { GetCustomerUseCase, GetJourneyFunnelUseCase, ListCustomersUseCase } from '../../application/customers.use-cases'
 
-const SEGMENTS: CustomerSegment[] = ['buyers', 'not_bought']
+const SEGMENTS: CustomerSegment[] = ['buyers', 'not_bought', 'birthday_month']
 
 export class ListCustomersQueryDto extends PaginationQueryDto {
   /** Nome, e-mail, telefone ou CPF */
@@ -35,6 +35,7 @@ function presentRow(r: CustomerRow) {
     email: r.email,
     name: r.name,
     phone: r.phone,
+    birthDate: r.birthDate,
     city: r.city,
     state: r.state,
     ordersCount: r.ordersCount,

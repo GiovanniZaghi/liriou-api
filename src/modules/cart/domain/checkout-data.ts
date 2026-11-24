@@ -8,6 +8,8 @@ export interface Customer {
   cpf: string
   /** 10 ou 11 dígitos, com DDD */
   phone: string
+  /** Aniversário (opcional), AAAA-MM-DD. Ausente em sacolas e pedidos antigos. */
+  birthDate?: string | null
 }
 
 export interface ShippingAddress {
@@ -41,6 +43,23 @@ export function isValidCpf(value: string): boolean {
   return check(9) === Number(cpf[9]) && check(10) === Number(cpf[10])
 }
 
+/**
+ * Data de nascimento: aceita DD/MM/AAAA ou AAAA-MM-DD e devolve AAAA-MM-DD.
+ * undefined = vazio; null = inválida.
+ */
+export function parseBirthDate(raw: string | null | undefined, today = new Date()): string | null | undefined {
+  const v = raw?.trim()
+  if (!v) return undefined
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/) ?? v.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return null
+  const [d, mo, y] = v.includes('/') ? [m[1], m[2], m[3]] : [m[3], m[2], m[1]]
+  const date = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d)))
+  // Rejeita 31/02 e afins (a data "vira" outro dia)
+  if (date.getUTCDate() !== Number(d) || date.getUTCMonth() !== Number(mo) - 1) return null
+  if (Number(y) < 1900 || date > today) return null
+  return `${y}-${mo}-${d}`
+}
+
 /** Normaliza e valida os dados da compradora; erros por campo com prefixo "customer.". */
 export function parseCustomer(input: Customer): Customer {
   const c: Customer = {
@@ -50,6 +69,9 @@ export function parseCustomer(input: Customer): Customer {
     phone: digits(input.phone),
   }
   const errors: Record<string, string> = {}
+  const birthDate = parseBirthDate(input.birthDate)
+  if (birthDate === null) errors['customer.birthDate'] = 'Data inválida (use DD/MM/AAAA)'
+  else if (birthDate) c.birthDate = birthDate
   if (c.name.split(' ').length < 2 || c.name.length < 5) errors['customer.name'] = 'Informe nome e sobrenome'
   if (!EMAIL_RE.test(c.email)) errors['customer.email'] = 'Informe um e-mail válido'
   if (!isValidCpf(c.cpf)) errors['customer.cpf'] = 'CPF inválido'

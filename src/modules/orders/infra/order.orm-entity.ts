@@ -25,6 +25,10 @@ export class OrderOrmEntity {
   @Column({ type: 'varchar', length: 11, name: 'customer_phone' })
   customerPhone: string
 
+  /** AAAA-MM-DD (o driver devolve a coluna date como texto) */
+  @Column({ type: 'date', name: 'customer_birth_date', nullable: true })
+  customerBirthDate: string | null
+
   @Column({ type: 'jsonb', name: 'shipping_address' })
   shippingAddress: ShippingAddress
 

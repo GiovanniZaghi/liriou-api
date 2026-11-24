@@ -18,6 +18,12 @@ export class CustomerDto {
   @IsString()
   @MaxLength(20)
   phone: string
+
+  /** Aniversário (opcional): DD/MM/AAAA ou AAAA-MM-DD */
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  birthDate?: string | null
 }
 
 export class AddressDto {

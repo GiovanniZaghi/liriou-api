@@ -30,6 +30,7 @@ export class TypeOrmOrderRepository extends OrderRepository {
         customerEmail: order.customer.email,
         customerCpf: order.customer.cpf,
         customerPhone: order.customer.phone,
+        customerBirthDate: order.customer.birthDate ?? null,
         shippingAddress: order.shippingAddress,
         shippingOptionId: order.shippingOption.id,
         shippingOptionLabel: order.shippingOption.label,
@@ -56,7 +57,13 @@ export class TypeOrmOrderRepository extends OrderRepository {
       id: row.id,
       number: row.number,
       status: row.status,
-      customer: { name: row.customerName, email: row.customerEmail, cpf: row.customerCpf, phone: row.customerPhone },
+      customer: {
+        name: row.customerName,
+        email: row.customerEmail,
+        cpf: row.customerCpf,
+        phone: row.customerPhone,
+        birthDate: row.customerBirthDate,
+      },
       shippingAddress: row.shippingAddress,
       shippingOption: {
         id: row.shippingOptionId,

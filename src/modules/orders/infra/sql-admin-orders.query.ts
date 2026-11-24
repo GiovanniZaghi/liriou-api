@@ -125,12 +125,13 @@ export class SqlAdminOrdersQuery extends AdminOrdersQuery {
     const [raw]: (RawRow & {
       shipping_option_label: string
       coupon_code: string | null
+      customer_birth_date: string | null
       subtotal_cents: number
       discount_cents: number
       shipping_cents: number
       updated_at: Date
     })[] = await this.db.query(
-      `SELECT ${ROW_SELECT}, o.shipping_option_label, o.coupon_code,
+      `SELECT ${ROW_SELECT}, o.shipping_option_label, o.coupon_code, o.customer_birth_date::text,
               o.subtotal_cents, o.discount_cents, o.shipping_cents, o.updated_at
          ${ROW_FROM}
         WHERE o.id = $1`,
@@ -154,7 +155,7 @@ export class SqlAdminOrdersQuery extends AdminOrdersQuery {
     const row = toRow(raw)
     return {
       ...row,
-      customer: { ...row.customer, cpf: raw.customer_cpf },
+      customer: { ...row.customer, cpf: raw.customer_cpf, birthDate: raw.customer_birth_date },
       shippingAddress: raw.shipping_address,
       shippingLabel: raw.shipping_option_label,
       couponCode: raw.coupon_code,

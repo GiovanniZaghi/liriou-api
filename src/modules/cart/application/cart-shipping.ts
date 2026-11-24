@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { normalizeCep } from '../../shipping/domain/package'
+import { PICKUP_OPTION } from '../../shipping/domain/pickup'
 import { ShippingGateway, type ShippingQuote } from '../../shipping/domain/shipping-gateway'
 import { InvalidCepError, ShippingOptionUnavailableError } from '../../shipping/domain/shipping.errors'
 import type { SelectedShipping } from '../domain/cart'
@@ -28,7 +29,8 @@ export class CartShippingQuoter {
       invoiceValueCents: view.pricing.subtotalCents,
       items: view.items.map((i) => ({ sku: i.product.sku, quantity: i.quantity, ...i.product.packageSize })),
     })
-    return { cep, options }
+    // Retirada em mãos sempre aparece por último (grátis, sem transportadora)
+    return { cep, options: [...options, PICKUP_OPTION] }
   }
 
   async choose(view: CartView, cepInput: string, serviceCode: string): Promise<SelectedShipping> {

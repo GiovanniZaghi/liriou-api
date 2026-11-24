@@ -57,7 +57,7 @@ export interface AdminOrderPayment {
 }
 
 export interface AdminOrderDetail extends AdminOrderRow {
-  customer: AdminOrderRow['customer'] & { cpf: string }
+  customer: AdminOrderRow['customer'] & { cpf: string; birthDate: string | null }
   shippingAddress: ShippingAddress
   shippingLabel: string
   couponCode: string | null

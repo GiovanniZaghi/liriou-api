@@ -1,4 +1,5 @@
 import { normalizePublicApiUrl } from '../../../shared/infra/public-api-url'
+import { isPickup } from '../domain/pickup'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { Env } from '../../../config/env'
@@ -38,6 +39,7 @@ export class ShipmentsConfig {
 
 function blockedReason(order: Order, shipment: Shipment | null): string | null {
   if (shipment) return 'Etiqueta já gerada para este pedido.'
+  if (isPickup(order.shippingOption.id)) return 'Retirada em mãos: não precisa de etiqueta. Combine a entrega com a cliente.'
   if (order.status !== OrderStatus.PAGO) return 'A etiqueta é liberada depois que o pagamento é aprovado.'
   if (!order.shippingOption.carrier) return 'Pedido com frete fixo antigo: gere a etiqueta direto no painel da Frenet.'
   return null
