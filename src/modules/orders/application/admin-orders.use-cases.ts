@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import type { Paginated, PageRequest } from '../../../shared/application/pagination'
 import type { UseCase } from '../../../shared/application/use-case'
 import { OrderNotFoundError } from '../domain/order.errors'
+import { OrderRepository } from '../domain/order.repository'
 import {
   AdminOrdersQuery,
   type AdminOrderDetail,
@@ -38,5 +39,29 @@ export class GetAdminOrderUseCase implements UseCase<string, AdminOrderDetail> {
     const order = await this.orders.detail(id)
     if (!order) throw new OrderNotFoundError()
     return order
+  }
+}
+
+/** Check "Entregue / Recebido pela cliente": oculta o pedido da fila principal. */
+@Injectable()
+export class MarkOrderDeliveredUseCase implements UseCase<string, void> {
+  constructor(private readonly orders: OrderRepository) {}
+
+  async execute(id: string) {
+    const order = await this.orders.findById(id)
+    if (!order) throw new OrderNotFoundError()
+    if (order.markDelivered()) await this.orders.updateDelivery(order)
+  }
+}
+
+/** "Desocultar": desfaz o entregue e o pedido volta para a fila. */
+@Injectable()
+export class UnhideOrderUseCase implements UseCase<string, void> {
+  constructor(private readonly orders: OrderRepository) {}
+
+  async execute(id: string) {
+    const order = await this.orders.findById(id)
+    if (!order) throw new OrderNotFoundError()
+    if (order.unmarkDelivered()) await this.orders.updateDelivery(order)
   }
 }

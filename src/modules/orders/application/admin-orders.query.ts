@@ -1,6 +1,7 @@
 import type { Paginated, PageRequest } from '../../../shared/application/pagination'
 import type { Cents } from '../../../shared/domain/money'
 import type { ShippingAddress } from '../../cart/domain/checkout-data'
+import type { FulfillmentStage } from '../domain/fulfillment'
 import type { OrderStatus } from '../domain/order'
 
 /**
@@ -16,6 +17,8 @@ export interface AdminOrderFilters {
   toShip?: boolean
   /** Todos os pedidos de uma cliente (tela de clientes) */
   email?: string
+  /** true = só os ocultos (entregues). Sem isso, a fila esconde os entregues (exceto em busca e na tela da cliente). */
+  hidden?: boolean
 }
 
 export interface AdminOrderPaymentRef {
@@ -43,6 +46,10 @@ export interface AdminOrderRow {
   /** Tentativa de pagamento mais recente */
   payment: AdminOrderPaymentRef | null
   shipment: AdminOrderShipmentRef | null
+  /** Etapa que a cliente vê (Recebido → Pago → Separando → Enviado → Entregue) */
+  stage: FulfillmentStage
+  /** Entregue / recebido pela cliente: pedido oculto da fila */
+  deliveredAt: Date | null
   createdAt: Date
 }
 
@@ -77,6 +84,8 @@ export interface AdminOrdersSummary {
   paidValueCents: Cents
   awaitingValueCents: Cents
   today: number
+  /** Entregues (aba Ocultos) */
+  hidden: number
 }
 
 export abstract class AdminOrdersQuery {

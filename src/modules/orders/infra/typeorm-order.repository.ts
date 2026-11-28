@@ -37,6 +37,7 @@ export class TypeOrmOrderRepository extends OrderRepository {
         shippingDetails: (({ id: _id, label: _label, ...details }) => details)(order.shippingOption),
         couponCode: order.couponCode,
         giftWrap: order.giftWrap,
+        deliveredAt: order.deliveredAt,
         ...order.totals,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
@@ -44,6 +45,10 @@ export class TypeOrmOrderRepository extends OrderRepository {
       await em.getRepository(OrderItemOrmEntity).delete({ orderId: order.id })
       await em.getRepository(OrderItemOrmEntity).insert(order.items.map((i) => ({ ...i, orderId: order.id })))
     })
+  }
+
+  async updateDelivery(order: Order) {
+    await this.orders.update({ id: order.id }, { deliveredAt: order.deliveredAt, updatedAt: order.updatedAt })
   }
 
   async updateStatus(order: Order) {
@@ -76,6 +81,7 @@ export class TypeOrmOrderRepository extends OrderRepository {
       },
       couponCode: row.couponCode,
       giftWrap: row.giftWrap,
+      deliveredAt: row.deliveredAt,
       items: lines.map(({ orderId: _o, ...item }) => item),
       totals: {
         subtotalCents: row.subtotalCents,

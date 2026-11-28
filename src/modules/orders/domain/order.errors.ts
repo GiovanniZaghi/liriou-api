@@ -23,3 +23,9 @@ export class ShippingRequiredError extends ValidationError {
     super({ shippingOptionId: 'Escolha uma opção de envio' }, 'Escolha uma opção de envio')
   }
 }
+
+export class OrderNotPaidError extends BusinessRuleError {
+  constructor() {
+    super('Só pedidos pagos podem ser marcados como entregues', 'ORDER_NOT_PAID')
+  }
+}

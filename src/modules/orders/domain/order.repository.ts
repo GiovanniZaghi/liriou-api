@@ -7,4 +7,6 @@ export abstract class OrderRepository {
   abstract findById(id: string): Promise<Order | null>
   /** Grava só o status (mudanças vindas do pagamento) */
   abstract updateStatus(order: Order): Promise<void>
+  /** Grava só o check de entregue */
+  abstract updateDelivery(order: Order): Promise<void>
 }

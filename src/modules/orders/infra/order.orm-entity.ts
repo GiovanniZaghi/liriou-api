@@ -60,6 +60,9 @@ export class OrderOrmEntity {
   @Column({ type: 'integer', name: 'total_cents' })
   totalCents: number
 
+  @Column({ type: 'timestamptz', name: 'delivered_at', nullable: true })
+  deliveredAt: Date | null
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common'
+import { Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
 import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator'
@@ -12,6 +12,8 @@ import {
   GetAdminOrderUseCase,
   GetOrdersSummaryUseCase,
   ListAdminOrdersUseCase,
+  MarkOrderDeliveredUseCase,
+  UnhideOrderUseCase,
 } from '../../application/admin-orders.use-cases'
 import { OrderStatus } from '../../domain/order'
 
@@ -32,6 +34,12 @@ export class ListAdminOrdersQueryDto extends PaginationQueryDto {
   @IsBoolean()
   toShip?: boolean
 
+  /** true = só os ocultos (entregues) */
+  @IsOptional()
+  @Transform(({ obj }) => obj.hidden === true || obj.hidden === 'true')
+  @IsBoolean()
+  hidden?: boolean
+
   @IsOptional()
   @IsEmail()
   email?: string
@@ -50,6 +58,8 @@ export function presentAdminOrderRow(o: AdminOrderRow) {
     giftWrap: o.giftWrap,
     payment: o.payment,
     shipment: o.shipment,
+    stage: o.stage,
+    deliveredAt: o.deliveredAt ? isoDate(new Date(o.deliveredAt)) : null,
     createdAt: isoDate(new Date(o.createdAt)),
   }
 }
@@ -99,6 +109,8 @@ export class AdminOrdersController {
     private readonly getSummary: GetOrdersSummaryUseCase,
     private readonly listOrders: ListAdminOrdersUseCase,
     private readonly getOrder: GetAdminOrderUseCase,
+    private readonly markDelivered: MarkOrderDeliveredUseCase,
+    private readonly unhide: UnhideOrderUseCase,
   ) {}
 
   /** Declarado antes de :id para não colidir com a rota */
@@ -116,5 +128,19 @@ export class AdminOrdersController {
   @Get(':id')
   async get(@Param('id', ParseUUIDPipe) id: string) {
     return presentAdminOrderDetail(await this.getOrder.execute(id))
+  }
+
+  /** Check "Entregue / Recebido pela cliente" (oculta da fila) */
+  @Post(':id/delivered')
+  @HttpCode(204)
+  async delivered(@Param('id', ParseUUIDPipe) id: string) {
+    await this.markDelivered.execute(id)
+  }
+
+  /** Desocultar: desfaz o entregue */
+  @Delete(':id/delivered')
+  @HttpCode(204)
+  async undoDelivered(@Param('id', ParseUUIDPipe) id: string) {
+    await this.unhide.execute(id)
   }
 }

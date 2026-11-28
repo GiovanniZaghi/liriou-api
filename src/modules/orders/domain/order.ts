@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Cents } from '../../../shared/domain/money'
 import type { Customer, ShippingAddress } from '../../cart/domain/checkout-data'
+import { OrderNotPaidError } from './order.errors'
 
 export enum OrderStatus {
   AGUARDANDO_PAGAMENTO = 'aguardando_pagamento',
@@ -50,6 +51,8 @@ export interface OrderProps {
   giftWrap: boolean
   items: OrderItem[]
   totals: OrderTotals
+  /** Entregue / recebido pela cliente (marcado no dashboard). Some da fila principal. */
+  deliveredAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -58,9 +61,16 @@ export interface OrderProps {
 export class Order {
   private constructor(private readonly props: OrderProps) {}
 
-  static place(input: Omit<OrderProps, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Order {
+  static place(input: Omit<OrderProps, 'id' | 'status' | 'deliveredAt' | 'createdAt' | 'updatedAt'>): Order {
     const now = new Date()
-    return new Order({ ...input, id: randomUUID(), status: OrderStatus.AGUARDANDO_PAGAMENTO, createdAt: now, updatedAt: now })
+    return new Order({
+      ...input,
+      id: randomUUID(),
+      status: OrderStatus.AGUARDANDO_PAGAMENTO,
+      deliveredAt: null,
+      createdAt: now,
+      updatedAt: now,
+    })
   }
 
   static restore(props: OrderProps): Order {
@@ -77,6 +87,7 @@ export class Order {
   get giftWrap() { return this.props.giftWrap }
   get items(): readonly OrderItem[] { return this.props.items }
   get totals() { return this.props.totals }
+  get deliveredAt() { return this.props.deliveredAt }
   get itemCount() { return this.props.items.reduce((s, i) => s + i.quantity, 0) }
   get createdAt() { return this.props.createdAt }
   get updatedAt() { return this.props.updatedAt }
@@ -87,6 +98,23 @@ export class Order {
   markPaid(): boolean {
     if (!this.isAwaitingPayment) return false
     this.props.status = OrderStatus.PAGO
+    this.props.updatedAt = new Date()
+    return true
+  }
+
+  /** Entregue / recebido pela cliente: sai da fila principal. Só pedido pago. Idempotente. */
+  markDelivered(): boolean {
+    if (this.props.status !== OrderStatus.PAGO) throw new OrderNotPaidError()
+    if (this.props.deliveredAt) return false
+    this.props.deliveredAt = new Date()
+    this.props.updatedAt = new Date()
+    return true
+  }
+
+  /** Desfaz o "entregue" (marcado por engano): o pedido volta para a fila. */
+  unmarkDelivered(): boolean {
+    if (!this.props.deliveredAt) return false
+    this.props.deliveredAt = null
     this.props.updatedAt = new Date()
     return true
   }

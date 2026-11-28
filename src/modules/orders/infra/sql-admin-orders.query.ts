@@ -9,6 +9,7 @@ import {
   type AdminOrderFilters,
   type AdminOrderRow,
 } from '../application/admin-orders.query'
+import { fulfillmentStage } from '../domain/fulfillment'
 import { OrderStatus } from '../domain/order'
 
 /** Fuso usado para "pedidos de hoje". */
@@ -20,7 +21,7 @@ const ROW_SELECT = `
   o.shipping_address, o.total_cents, o.gift_wrap, o.created_at,
   (SELECT COALESCE(SUM(i.quantity), 0)::int FROM order_items i WHERE i.order_id = o.id) AS item_count,
   pay.method AS payment_method, pay.status AS payment_status, pay.installments AS payment_installments,
-  s.status AS shipment_status, s.tracking_number`
+  s.status AS shipment_status, s.tracking_number, s.last_event->>'description' AS last_event, o.delivered_at`
 
 const ROW_FROM = `
   FROM orders o
@@ -47,6 +48,8 @@ interface RawRow {
   payment_installments: number | null
   shipment_status: string | null
   tracking_number: string | null
+  last_event: string | null
+  delivered_at: Date | null
 }
 
 @Injectable()
@@ -61,7 +64,8 @@ export class SqlAdminOrdersQuery extends AdminOrdersQuery {
               count(*) FILTER (WHERE o.status = $1)::int AS awaiting,
               count(*) FILTER (WHERE o.status = $2)::int AS paid,
               count(*) FILTER (WHERE o.status = $3)::int AS cancelled,
-              count(*) FILTER (WHERE o.status = $2 AND NOT EXISTS (SELECT 1 FROM shipments s WHERE s.order_id = o.id))::int AS to_ship,
+              count(*) FILTER (WHERE o.status = $2 AND o.delivered_at IS NULL AND NOT EXISTS (SELECT 1 FROM shipments s WHERE s.order_id = o.id))::int AS to_ship,
+              count(*) FILTER (WHERE o.delivered_at IS NOT NULL)::int AS hidden,
               COALESCE(SUM(o.total_cents) FILTER (WHERE o.status = $2), 0)::bigint AS paid_value,
               COALESCE(SUM(o.total_cents) FILTER (WHERE o.status = $1), 0)::bigint AS awaiting_value,
               count(*) FILTER (WHERE (o.created_at AT TIME ZONE $4)::date = (now() AT TIME ZONE $4)::date)::int AS today
@@ -77,10 +81,11 @@ export class SqlAdminOrdersQuery extends AdminOrdersQuery {
       paidValueCents: Number(r.paid_value),
       awaitingValueCents: Number(r.awaiting_value),
       today: r.today,
+      hidden: r.hidden,
     }
   }
 
-  async list({ q, status, toShip, email }: AdminOrderFilters, page: PageRequest) {
+  async list({ q, status, toShip, email, hidden }: AdminOrderFilters, page: PageRequest) {
     const where: string[] = []
     const params: unknown[] = []
     const param = (v: unknown) => {
@@ -90,6 +95,9 @@ export class SqlAdminOrdersQuery extends AdminOrdersQuery {
 
     if (status) where.push(`o.status = ${param(status)}`)
     if (toShip) where.push(`o.status = ${param(OrderStatus.PAGO)} AND s.id IS NULL`)
+    // Ocultos = entregues. A fila principal esconde; busca e tela da cliente mostram tudo.
+    if (hidden) where.push('o.delivered_at IS NOT NULL')
+    else if (!email && !q?.trim()) where.push('o.delivered_at IS NULL')
     if (email) where.push(`lower(o.customer_email) = lower(${param(email)})`)
 
     const term = q?.trim().replace(/^#/, '')
@@ -202,6 +210,14 @@ function toRow(r: RawRow): AdminOrderRow {
       ? { method: r.payment_method, status: r.payment_status ?? '', installments: Number(r.payment_installments ?? 1) }
       : null,
     shipment: r.shipment_status ? { status: r.shipment_status, trackingNumber: r.tracking_number } : null,
+    stage: fulfillmentStage({
+      status: r.status,
+      deliveredAt: r.delivered_at,
+      shipment: r.shipment_status
+        ? { status: r.shipment_status, trackingNumber: r.tracking_number, lastEventDescription: r.last_event }
+        : null,
+    }),
+    deliveredAt: r.delivered_at,
     createdAt: r.created_at,
   }
 }
